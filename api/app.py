@@ -49,6 +49,32 @@ def get_alerts(): #Fetches last 10 critical events
     conn.close()
     return jsonify({"alerts": rows})
 
+
+#We have added  this below new endpoint just for the sake of another example to see how pipeline works
+
+@app.route('/status')
+def status():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM events")
+    total = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM events WHERE severity='critical'")
+    critical = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM events WHERE processed=true")
+    processed = cur.fetchone()[0]
+    conn.close()
+    return jsonify({
+        "service": "telealert-api",
+        "version": "1.1",
+        "stats": {
+            "total_events": total,
+            "critical_events": critical,
+            "processed_events": processed
+        }
+    })
+
+#We have added  this above new endpoint just for the sake of another example to see how pipeline works
+
 if __name__ == '__main__':             #Host: all interfaces (0.0.0.0),Port: 5000
     app.run(host='0.0.0.0', port=5000)
 
