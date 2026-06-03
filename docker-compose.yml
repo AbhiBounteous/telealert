@@ -1,0 +1,52 @@
+#version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: telealert
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./api
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: postgres
+      DB_NAME: telealert
+      DB_USER: admin
+      DB_PASSWORD: password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build: ./worker
+    environment:
+      DB_HOST: postgres
+      DB_NAME: telealert
+      DB_USER: admin
+      DB_PASSWORD: password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+
+  # Your YAML file sets up a complete system where a Flask API receives events, stores them in a PostgreSQL database, and a background worker continuously processes those stored events once the database is ready
+
+#   ✅ API service        — receives network events, exposes metrics
+# ✅ Worker service     — processes events, fires critical alerts  
+# ✅ PostgreSQL         — stores all events with timestamps
+# ✅ Prometheus metrics — live counters scraping from API
+# ✅ Docker Compose     — all 3 services wired together
+# ✅ Real time logging  — events visible live across terminals

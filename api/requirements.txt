@@ -1,0 +1,15 @@
+flask==3.0.0 #A lightweight Python web framework ,Creating API endpoints (/health, /event, etc.)Handling HTTP requests and responses
+psycopg2-binary==2.9.9 #PostgreSQL database adapter for Python ✅ Why you need it: It allows your app to: Connect to PostgreSQL,Execute SQL queries ,Insert and fetch data,In production, people often prefer psycopg2 (non-binary) for better control
+prometheus-client==0.19.0 #Official Prometheus library for Python,Create metrics,Expose metrics endpoint 
+
+#YOUR API STACK:-
+# Layer	        Tool Used	  Purpose
+# Web framework	Flask	          API handling
+# Database	psycopg2	  PostgreSQL access
+# Monitoring	prometheus-client Metrics tracking
+
+# 🧠 Summary
+# Your requirements.txt enables your application to:
+# ✔ Serve APIs (Flask)
+# ✔ Store events in PostgreSQL (psycopg2)
+# ✔ Export metrics for monitoring (Prometheus)
