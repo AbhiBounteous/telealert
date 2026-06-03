@@ -1,5 +1,5 @@
 FROM python:3.11-slim
-ENV PYTHONUNBUFFERED=1 #Disables Python output buffering
+ENV PYTHONUNBUFFERED=1 
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -14,7 +14,7 @@ CMD ["python", "worker.py"]
 # Worker script runs
 # You’ll see:
 # TeleAlert worker started
-
+# Python output buffering ENV PYTHONUNBUFFERED=1 disable
 
 # Worker:
 
