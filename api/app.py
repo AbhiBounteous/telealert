@@ -15,7 +15,7 @@ def get_db(): #database connection function ,Creates a connection to PostgreSQL
 
 @app.route('/health') #Endpoint: GET /health,Load balancers,Kubernetes readiness/liveness probes
 def health():
-    return jsonify({"status": "ok", "service": "telealert-api"})
+    return jsonify({"status": "ok", "service": "telealert-api", "version": "1.2"})
 
 @app.route('/event', methods=['POST']) #receive event api
 def receive_event():
