@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telealert-api
+  labels:
+    app: telealert-api
+  annotations:
+    kubernetes.io/change-cause: "Release v1.2 - added status endpoint"
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: telealert-api
+  template:
+    metadata:
+      labels:
+        app: telealert-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/abhibounteous/telealert-api:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_NAME
+              value: telealert
+            - name: DB_USER
+              value: admin
+            - name: DB_PASSWORD
+              value: password
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telealert-api
+spec:
+  selector:
+    app: telealert-api
+  type: NodePort
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 30500
