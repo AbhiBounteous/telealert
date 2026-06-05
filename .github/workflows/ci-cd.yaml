@@ -24,13 +24,53 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install flask psycopg2-binary prometheus-client pytest
+          pip install flask psycopg2-binary prometheus-client pytest anthropic requests
 
       - name: Run syntax check
         run: |
           python -m py_compile api/app.py
           python -m py_compile worker/worker.py
           echo "Syntax check passed"
+
+      - name: Explain failure with Claude
+        if: failure()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 - <<'EOF'
+          import anthropic
+          import os
+
+          error_log = """
+          GitHub Actions CI/CD pipeline failed during Run Tests stage.
+          Job: Run Tests
+          Branch: main
+          Repository: AbhiBounteous/telealert
+          Error: Syntax check or dependency installation failed.
+          """
+
+          client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+          message = client.messages.create(
+              model="claude-sonnet-4-6",
+              max_tokens=500,
+              messages=[{
+                  "role": "user",
+                  "content": f"""You are a senior DevOps engineer at Bounteous.
+                  A CI/CD pipeline has failed. Analyze this error and explain:
+                  1. What went wrong in simple terms
+                  2. Exact steps to fix it
+                  3. How to prevent it next time
+
+                  Error details:
+                  {error_log}"""
+              }]
+          )
+          print("=" * 60)
+          print("CLAUDE AI FAILURE ANALYSIS")
+          print("=" * 60)
+          print(message.content[0].text)
+          print("=" * 60)
+          EOF
 
   build-and-push:
     name: Build and Push Docker Images
@@ -65,6 +105,46 @@ jobs:
           push: true
           tags: ghcr.io/abhibounteous/telealert-worker:latest
 
+      - name: Explain failure with Claude
+        if: failure()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 - <<'EOF'
+          import anthropic
+          import os
+
+          error_log = """
+          GitHub Actions CI/CD pipeline failed during Build and Push stage.
+          Job: Build and Push Docker Images
+          Branch: main
+          Repository: AbhiBounteous/telealert
+          Error: Docker build or push to GHCR failed.
+          """
+
+          client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+          message = client.messages.create(
+              model="claude-sonnet-4-6",
+              max_tokens=500,
+              messages=[{
+                  "role": "user",
+                  "content": f"""You are a senior DevOps engineer at Bounteous.
+                  A Docker build or push failed in CI/CD. Analyze and explain:
+                  1. What went wrong in simple terms
+                  2. Exact steps to fix it
+                  3. How to prevent it next time
+
+                  Error details:
+                  {error_log}"""
+              }]
+          )
+          print("=" * 60)
+          print("CLAUDE AI FAILURE ANALYSIS")
+          print("=" * 60)
+          print(message.content[0].text)
+          print("=" * 60)
+          EOF
+
   deploy:
     name: Deploy Notification
     runs-on: ubuntu-latest
@@ -81,3 +161,39 @@ jobs:
           echo "Worker image pushed to GHCR"
           echo "API: ghcr.io/abhibounteous/telealert-api:latest"
           echo "Worker: ghcr.io/abhibounteous/telealert-worker:latest"
+
+      - name: Set up Python for AI summary
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install anthropic
+        run: pip install anthropic
+
+      - name: Claude deployment summary
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 - <<'EOF'
+          import anthropic
+          import os
+
+          client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+          message = client.messages.create(
+              model="claude-sonnet-4-6",
+              max_tokens=200,
+              messages=[{
+                  "role": "user",
+                  "content": """You are a DevOps bot. Generate a one paragraph 
+                  deployment success summary for TeleAlert v1.2 — a telecom network 
+                  event processing system just deployed to Kubernetes at 
+                  Bounteous × Telecom & Media Practice. 
+                  Be professional and concise."""
+              }]
+          )
+          print("=" * 60)
+          print("CLAUDE AI DEPLOYMENT SUMMARY")
+          print("=" * 60)
+          print(message.content[0].text)
+          print("=" * 60)
+          EOF
