@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: worker
-          image: ghcr.io/abhibounteous/telealert-worker:latest
+          image: ghcr.io/abhibounteous/telealert-worker@sha256:50b2a2c98bd5ca09efb884956c76fd5875044b875ab06d056477a626a41162e7
           env:
             - name: DB_HOST
               value: postgres

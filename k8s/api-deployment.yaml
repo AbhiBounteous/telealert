@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: ghcr.io/abhibounteous/telealert-api:latest
+          image: ghcr.io/abhibounteous/telealert-api@sha256:cb392a71dcb895d14e3b1ad3f0113d0f117b23708710744977a52d3bef466445
           ports:
             - containerPort: 5000
           env:
