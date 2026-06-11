@@ -7,7 +7,7 @@ metadata:
   annotations:
     kubernetes.io/change-cause: "Release v1.2 - added status endpoint"
 spec:
-  replicas: 2
+  replicas: 3
   strategy:
     type: RollingUpdate
     rollingUpdate:
