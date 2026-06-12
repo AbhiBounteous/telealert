@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telealert-api-prod
+  labels:
+    app: telealert-api
+    env: prod
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: telealert-api
+      env: prod
+  template:
+    metadata:
+      labels:
+        app: telealert-api
+        env: prod
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/abhibounteous/telealert-api:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_NAME
+              value: telealert_prod
+            - name: DB_USER
+              value: admin
+            - name: DB_PASSWORD
+              value: password
+            - name: ENVIRONMENT
+              value: prod
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telealert-api-prod
+  labels:
+    env: prod
+spec:
+  selector:
+    app: telealert-api
+    env: prod
+  type: NodePort
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 30503
