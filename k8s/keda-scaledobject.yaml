@@ -1,0 +1,39 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: telealert-worker-scaler
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: telealert-worker
+  minReplicaCount: 0
+  maxReplicaCount: 5
+  cooldownPeriod: 30
+  pollingInterval: 15
+  triggers:
+    - type: postgresql
+      metadata:
+        host: postgres.default.svc.cluster.local
+        port: "5432"
+        dbName: telealert
+        userName: admin
+        sslmode: disable
+        query: >-
+          SELECT COUNT(*) FROM events
+          WHERE processed=false
+        targetQueryValue: "5"
+        activationTargetQueryValue: "1"
+      authenticationRef:
+        name: keda-postgres-auth
+---
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-postgres-auth
+  namespace: default
+spec:
+  secretTargetRef:
+    - parameter: password
+      name: keda-postgres-secret
+      key: password
