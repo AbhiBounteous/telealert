@@ -1,0 +1,34 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: telealert-canary
+spec:
+  hosts:
+    - telealert-api
+  http:
+    - route:
+        - destination:
+            host: telealert-api
+            subset: stable
+          weight: 90
+        - destination:
+            host: telealert-api
+            subset: canary
+          weight: 10
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: telealert-destination
+spec:
+  host: telealert-api
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+    - name: stable
+      labels:
+        version: stable
+    - name: canary
+      labels:
+        version: canary
