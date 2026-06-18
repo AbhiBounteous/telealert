@@ -1,11 +1,49 @@
 from flask import Flask, request, jsonify
 from prometheus_client import Counter, generate_latest
-import psycopg2, os
+import psycopg2
+import os
 
-app = Flask(__name__) # app initialisation Creates a Flask application instance 
-EVENTS = Counter('network_events_total', 'Total network events', ['severity']) #prometheus matrics,A counter metric named network_events_total ,Tracks total events based on severity labels
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+from opentelemetry.sdk.resources import Resource
 
-def get_db(): #database connection function ,Creates a connection to PostgreSQL
+resource = Resource.create({
+    "service.name": "telealert-api",
+    "service.version": "1.2",
+    "deployment.environment": os.getenv("ENVIRONMENT", "production")
+})
+
+provider = TracerProvider(resource=resource)
+
+otlp_exporter = OTLPSpanExporter(
+    endpoint=os.getenv(
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "http://jaeger:4318/v1/traces"
+    )
+)
+
+processor = BatchSpanProcessor(otlp_exporter)
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
+
+tracer = trace.get_tracer("telealert.api")
+
+app = Flask(__name__)
+
+FlaskInstrumentor().instrument_app(app)
+Psycopg2Instrumentor().instrument()
+
+EVENTS = Counter(
+    'network_events_total',
+    'Total network events',
+    ['severity']
+)
+
+def get_db():
     return psycopg2.connect(
         host=os.getenv('DB_HOST', 'postgres'),
         database=os.getenv('DB_NAME', 'telealert'),
@@ -13,88 +51,93 @@ def get_db(): #database connection function ,Creates a connection to PostgreSQL
         password=os.getenv('DB_PASSWORD', 'password')
     )
 
-@app.route('/health') #Endpoint: GET /health,Load balancers,Kubernetes readiness/liveness probes
+@app.route('/health')
 def health():
-    return jsonify({"status": "ok", "service": "telealert-api", "version": "1.2"})
+    return jsonify({
+        "status": "ok",
+        "service": "telealert-api",
+        "version": "1.2",
+        "tracing": "enabled"
+    })
 
-@app.route('/event', methods=['POST']) #receive event api
+@app.route('/event', methods=['POST'])
 def receive_event():
-    data = request.json #Read incoming JSON
-    severity = data.get('severity', 'low') #Extract severity
-    EVENTS.labels(severity=severity).inc() #Increments metric count for given severity
-    conn = get_db()#Inserts event into events table 
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO events (node_id, severity, message) VALUES (%s, %s, %s)",#Uses parameterized query
-        (data['node_id'], severity, data['message'])
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "received", "severity": severity}) #Send response
+    with tracer.start_as_current_span("receive_event") as span:
+        data = request.json
+        severity = data.get('severity', 'low')
+        node_id = data.get('node_id', 'unknown')
 
-@app.route('/metrics') #Endpoint: GET /metrics,Returns Prometheus metrics
+        span.set_attribute("event.severity", severity)
+        span.set_attribute("event.node_id", node_id)
+        span.set_attribute("event.message",
+                          data.get('message', ''))
+
+        EVENTS.labels(severity=severity).inc()
+
+        with tracer.start_as_current_span("db_insert"):
+            conn = get_db()
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO events "
+                "(node_id, severity, message) "
+                "VALUES (%s, %s, %s)",
+                (node_id, severity,
+                 data.get('message', ''))
+            )
+            conn.commit()
+            conn.close()
+
+        return jsonify({
+            "status": "received",
+            "severity": severity,
+            "traced": True
+        })
+
+@app.route('/metrics')
 def metrics():
     return generate_latest()
 
-@app.route('/alerts') 
-def get_alerts(): #Fetches last 10 critical events
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT id, node_id, severity, message, created_at::text FROM events "
-        "WHERE severity='critical' ORDER BY created_at DESC LIMIT 10" #used for Dashboard,alert monitoring system
-
-    )
-    rows = cur.fetchall()
-    conn.close()
-    return jsonify({"alerts": rows})
-
-
-#We have added  this below new endpoint just for the sake of another example to see how pipeline works
+@app.route('/alerts')
+def get_alerts():
+    with tracer.start_as_current_span("get_alerts"):
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM events "
+            "WHERE severity='critical' "
+            "ORDER BY created_at DESC LIMIT 10"
+        )
+        rows = cur.fetchall()
+        conn.close()
+        return jsonify({"alerts": rows})
 
 @app.route('/status')
 def status():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM events")
-    total = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM events WHERE severity='critical'")
-    critical = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM events WHERE processed=true")
-    processed = cur.fetchone()[0]
-    conn.close()
-    return jsonify({
-        "service": "telealert-api",
-        "version": "1.1",
-        "stats": {
-            "total_events": total,
-            "critical_events": critical,
-            "processed_events": processed
-        }
-    })
+    with tracer.start_as_current_span("get_status"):
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM events")
+        total = cur.fetchone()[0]
+        cur.execute(
+            "SELECT COUNT(*) FROM events "
+            "WHERE severity='critical'"
+        )
+        critical = cur.fetchone()[0]
+        cur.execute(
+            "SELECT COUNT(*) FROM events "
+            "WHERE processed=true"
+        )
+        processed = cur.fetchone()[0]
+        conn.close()
+        return jsonify({
+            "service": "telealert-api",
+            "version": "1.2",
+            "stats": {
+                "total_events": total,
+                "critical_events": critical,
+                "processed_events": processed
+            }
+        })
 
-#We have added  this above new endpoint just for the sake of another example to see how pipeline works
-
-if __name__ == '__main__':             #Host: all interfaces (0.0.0.0),Port: 5000
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-
-    #This service acts like a mini observability + alerting backend:
-#     🔄 Flow:
-
-# Client sends event → /event
-# Event:
-
-# Stored in DB
-# Counted in Prometheus
-
-
-# Prometheus scrapes → /metrics
-# Alerts dashboard fetches → /alerts
-# Health check via → /health
-
-#KEY FEATURES
-# REST API using Flask
-# ✔ PostgreSQL data storage
-# ✔ Prometheus monitoring integration
-# ✔ Alert querying support
-# ✔ Environment-based configuration
