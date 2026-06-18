@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: telealert-environments
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: telealert-dev
+          - env: staging
+            namespace: telealert-staging
+          - env: prod
+            namespace: telealert-prod
+  template:
+    metadata:
+      name: 'telealert-kustomize-{{env}}'
+    spec:
+      project: default
+      source:
+        repoURL: git@github.com:AbhiBounteous/telealert.git
+        targetRevision: HEAD
+        path: 'k8s/kustomize/overlays/{{env}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

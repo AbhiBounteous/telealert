@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namePrefix: staging-
+namespace: telealert-staging
+resources:
+  - ../../base
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/env/1/value
+        value: telealert_staging
+      - op: add
+        path: /spec/template/metadata/labels/env
+        value: staging
+    target:
+      kind: Deployment
+      name: telealert-api
+commonLabels:
+  environment: staging
+images:
+  - name: ghcr.io/abhibounteous/telealert-api
+    newTag: latest

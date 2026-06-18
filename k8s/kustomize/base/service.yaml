@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: telealert-api
+spec:
+  selector:
+    app: telealert-api
+  ports:
+    - port: 5000
+      targetPort: 5000
