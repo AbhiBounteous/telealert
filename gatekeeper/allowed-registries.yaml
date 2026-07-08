@@ -1,0 +1,53 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: allowedregistries
+spec:
+  crd:
+    spec:
+      names:
+        kind: AllowedRegistries
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            registries:
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package allowedregistries
+        violation[{"msg": msg}] {
+          container := input.review.object.spec.containers[_]
+          not starts_with_allowed(container.image)
+          msg := sprintf("Image '%v' is not from allowed registry. Allowed: %v", [container.image, input.parameters.registries])
+        }
+        starts_with_allowed(image) {
+          registry := input.parameters.registries[_]
+          startswith(image, registry)
+        }
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: AllowedRegistries
+metadata:
+  name: telealert-allowed-registries
+spec:
+  match:
+    kinds:
+      - apiGroups: ["apps"]
+        kinds: ["Deployment"]
+    namespaces:
+      - default
+      - telealert-dev
+      - telealert-staging
+      - telealert-prod
+  parameters:
+    registries:
+      - "ghcr.io/abhibounteous"
+      - "docker.io/jaegertracing"
+      - "docker.io/prom"
+      - "grafana"
+      - "postgres"
+      - "kindest"
