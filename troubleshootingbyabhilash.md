@@ -157,3 +157,12 @@ Root cause: Kind cluster webhook networking limitation
 Evidence: constraint_status=enforced in logs but webhook not intercepting
 Fix: Use EKS/GKE for production Gatekeeper testing
 Workaround: Use dryrun mode to audit violations
+
+## Kibana Readiness Probe Failing on Kind
+Problem: Kibana 0/1 ready, readiness probe timeout
+Root cause: Memory pressure on 34-day cluster
+            running 15+ components simultaneously
+Evidence: Event loop blocked 15234ms in logs
+Fix: Use dedicated cluster with 8GB+ RAM
+     Or reduce other workloads first
+     Works correctly on EKS/GKE with proper resources
