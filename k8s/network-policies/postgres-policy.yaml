@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: telealert-api
+        - podSelector:
+            matchLabels:
+              app: telealert-worker
+      ports:
+        - port: 5432
+    - ports:
+        - port: 15090
+        - port: 15021
+  egress:
+    - ports:
+        - port: 53
+        - port: 15012
+        - port: 15443

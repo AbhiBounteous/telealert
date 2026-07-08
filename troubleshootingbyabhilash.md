@@ -116,3 +116,44 @@ NEXT TROUBLESHOOTING ISSUE:-
 after pasting the command:-curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg i can see that the prompt seems to be stucked please provide the fix
 Corporate SSL is blocking it again — same issue as the Helm install. Use the -k flag to bypass it: but it got stucked again,Now try to create an account of bounteous as mail id in github.com
 Your corporate network is completely blocking GitHub downloads — not just SSL, but the connection itself times out. The good news is you don't need the GitHub CLI at all. Plain git commands do everything we need.
+
+
+
+=========================================================================================
+CI/CD Pipeline — Fixes applied:
+1. GHCR image tags must be fully lowercase — replaced
+   ${{ github.repository_owner }} with hardcoded abhibounteous
+2. Dockerfile comments with # caused buildx ENV parsing error —
+   removed all comment lines from Dockerfiles
+   
+=========================================================================================
+## Session 1 — Phase 1
+- Installed WSL2, Docker, Kind, Claude SDK
+- Fixed corporate SSL issue with -k flag
+- Cluster running with 3 nodes
+
+## Session 2 — Phase 2A/B
+- Built TeleAlert 3-service app
+- Pushed to GitHub via SSH over port 443
+- CI/CD pipeline green in 63 seconds
+
+## Session 3 — Phase 2C/D
+- Deployed to Kubernetes
+- Scaled, rolled out, rolled back
+- Grafana dashboard live
+
+## Session 4 — Phase 3
+- Claude diagnosed fiber cut with 85% confidence
+- Autonomous agent made 8 tool calls
+- Cluster scaled without human input
+This daily log becomes your interview story.
+✅ DevOps engineer interviews
+✅ Bounteous × Telecom & Media Practice
+✅ Claude Architect Certification
+✅ AI-powered operations roles
+## OPA Gatekeeper on Kind
+Problem: Webhook not blocking deployments in default namespace
+Root cause: Kind cluster webhook networking limitation
+Evidence: constraint_status=enforced in logs but webhook not intercepting
+Fix: Use EKS/GKE for production Gatekeeper testing
+Workaround: Use dryrun mode to audit violations
