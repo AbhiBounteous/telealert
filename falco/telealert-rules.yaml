@@ -1,0 +1,27 @@
+customRules:
+  telealert-rules.yaml: |-
+    - rule: TeleAlert Shell Spawned
+      desc: Shell spawned in TeleAlert container
+      condition: >
+        spawned_process and container and
+        container.name startswith "telealert" and
+        proc.name in (bash, sh, zsh)
+      output: >
+        Shell spawned in TeleAlert container!
+        (user=%user.name shell=%proc.name
+        pod=%k8s.pod.name)
+      priority: CRITICAL
+      tags: [telealert, security]
+
+    - rule: TeleAlert Sensitive File Access
+      desc: Sensitive file read in TeleAlert pod
+      condition: >
+        open_read and container and
+        container.name startswith "telealert" and
+        fd.name in (/etc/passwd, /etc/shadow)
+      output: >
+        Sensitive file read in TeleAlert!
+        (file=%fd.name pod=%k8s.pod.name
+        user=%user.name)
+      priority: WARNING
+      tags: [telealert, security]
