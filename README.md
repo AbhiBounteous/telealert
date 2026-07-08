@@ -267,3 +267,235 @@ and the Claude API.
 ---
 
 *TeleAlert — Where DevOps meets AI-Powered Operations*
+=======================
+# TeleAlert — AI-Powered Telecom Network Operations
+
+> Production-grade DevOps system built by Abhilash Bhuibhar
+> Bounteous × Telecom & Media Practice
+
+---
+
+## Project Overview
+
+TeleAlert is a complete AI-powered network operations
+system for telecom NOC teams. It monitors network events,
+predicts failures, auto-heals infrastructure, and sends
+intelligent alerts — all powered by Claude AI.
+
+---
+
+## Architecture
+GitHub → ArgoCD → Kubernetes (3 nodes)
+├── telealert-api (Flask)
+├── telealert-worker (Python)
+├── PostgreSQL
+├── Prometheus + Grafana
+└── Jaeger (OTel tracing)
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| GitOps | ArgoCD v3.4.3 |
+| Autoscaling | KEDA + HPA + VPA |
+| Service Mesh | Istio 1.30.1 |
+| Tracing | OpenTelemetry + Jaeger |
+| IaC | Terraform v1.7.0 |
+| Security | Trivy + Vault + Falco + OPA |
+| AI | Claude Sonnet + Llama3 + LangChain |
+| RAG | ChromaDB + mxbai-embed-large |
+| Framework | LangChain |
+
+---
+
+## Phase 1 — DevOps Foundation
+
+### CI/CD Pipeline
+- GitHub Actions pipeline completes in 60 seconds
+- Stages: Test → Build → Trivy Scan → Deploy
+- Images pushed to GHCR with SHA256 pinning
+- Claude AI explains failures automatically
+
+### Kubernetes
+- 3-node Kind cluster (1 control + 2 workers)
+- Zero downtime rolling deployments
+- Rollback in 10 seconds
+- Resource limits on all containers
+
+### Monitoring
+- Prometheus scraping every 15 seconds
+- Grafana dashboard: Total Events, Critical Alerts
+- OpenTelemetry traces with 3 spans per request
+- Jaeger UI showing DB bottleneck (57% of time)
+
+---
+
+## Phase 2 — GitOps + Advanced K8s
+
+### ArgoCD GitOps
+- Git is single source of truth
+- Auto-sync on every push
+- Self-healing enabled
+- App of Apps pattern for 3 environments
+
+### Multi-Environment
+dev:     namespace telealert-dev     replicas=1
+staging: namespace telealert-staging replicas=2
+prod:    namespace telealert-prod    replicas=3
+### KEDA Autoscaling
+- Worker scales 0→1 in 4 seconds
+- Scales back to 0 after processing
+- PostgreSQL queue depth as trigger
+- Zero cost during idle periods
+
+### Istio Service Mesh
+- mTLS STRICT mode enforced
+- Plain HTTP rejected
+- Canary 90/10 traffic split
+- All pods show 2/2 (sidecar injected)
+
+### Kustomize + ApplicationSets
+- Base YAML + environment overlays
+- ApplicationSet generates 3 apps automatically
+- DRY principle — no duplication
+
+### Terraform IaC
+- Kind cluster provisioned in 2m36s
+- Variables, outputs, state file
+- terraform destroy + apply = exact reproduction
+
+---
+
+## Phase 3 — DevSecOps
+
+### Trivy Scanning
+- API image: 2 CRITICAL + 13 HIGH CVEs found
+- Dockerfile: Running as root fixed
+- Added non-root user + HEALTHCHECK
+- SBOM generated (254KB CycloneDX 1.7)
+
+### HashiCorp Vault
+- Database credentials stored securely
+- API keys stored securely
+- Read-only policy for app token
+- 24h TTL tokens
+- Deployed to Kubernetes via Helm
+
+### Falco Runtime Security
+- 1 Falco pod per node (3 total)
+- Detected shell exec in telealert-api
+- Custom rules for TeleAlert
+- Alerts include pod name + user + timestamp
+
+### OPA Gatekeeper
+- AllowedRegistries policy
+- RequireResourceLimits policy
+- NoLatestTag policy (warn in prod)
+
+---
+
+## Phase 4 — AI-Powered Operations
+
+### Incident Response Bot
+```bash
+python3 ai-ops/incident_bot.py
+```
+Claude diagnoses incidents with 85% confidence.
+Identified fiber cut pattern across 10 Mumbai nodes.
+
+### Autonomous DevOps Agent (MCP)
+```bash
+python3 mcp-server/devops_mcp_server.py
+```
+8 autonomous tool calls. Scaled deployments
+without human intervention.
+
+### Auto-Healing Agent
+```bash
+python3 ai-ops/auto_healing_agent.py
+```
+Monitors cluster every 60s.
+Auto-restarts crashed pods.
+Natural language kubectl interface.
+
+### Predictive Alerts
+```bash
+python3 ai-ops/predictive_alerts.py
+```
+91% confidence failure prediction.
+99.2% pattern signature match.
+
+### Slack Integration
+```bash
+python3 ai-ops/slack_alerts.py
+```
+Claude-generated alerts to #network-alerts.
+Smart deduplication prevents spam.
+
+### 4-Agent Pipeline
+```bash
+python3 ai-ops/multi_agent.py
+```
+Monitor → Diagnose → Remediate → Report.
+Full incident lifecycle automated.
+
+### Enterprise RAG System
+```bash
+python3 ai-ops/rag_enterprise.py
+```
+Version A: Claude Sonnet + mxbai-embed (client-facing)
+Version B: Llama3 + mxbai-embed (air-gapped)
+LangChain framework + ChromaDB vector store.
+
+---
+
+## Real Results
+
+| Achievement | Detail |
+|---|---|
+| Incident diagnosis | 85% confidence fiber cut |
+| Failure prediction | 91% confidence |
+| Pattern match | 99.2% signature |
+| KEDA scale up | 4 seconds |
+| Pipeline speed | 60 seconds |
+| Trivy CVEs found | 2 CRITICAL + 17 HIGH |
+| SBOM size | 254KB CycloneDX |
+| OTel traces | 20 traces, 3 spans each |
+| DB bottleneck | 57% of request time |
+
+---
+
+## Bugs Debugged
+
+1. Corporate SSL → `-k` flag + CA cert
+2. Python buffering → `PYTHONUNBUFFERED=1`
+3. GitHub SSH blocked → port 443 override
+4. GHCR lowercase tags → hardcoded name
+5. Dockerfile comments → removed all
+6. Prometheus content-type → fallback protocol
+7. LangChain API changes → new import paths
+8. Ollama SSL → `OLLAMA_INSECURE=true`
+9. Network Policy + Istio → allow ports 15000-15020
+10. KEDA kubectl install → use Helm ownership
+
+---
+
+## Project Stats
+
+| Metric | Value |
+|---|---|
+| GitHub commits | 30+ |
+| AI features | 10 |
+| Kubernetes pods | 12 |
+| LLM models | 3 |
+| Vector documents | 15 |
+| Pipeline time | 60 seconds |
+| Total cost | ₹0 |
+
+---
+
+## Author
+
+**Abhilash Bhuibhar**
+Bounteous × Telecom & Media Practice
