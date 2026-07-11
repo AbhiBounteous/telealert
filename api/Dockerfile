@@ -36,14 +36,7 @@
 # Installs dependencies (Flask, psycopg2, Prometheus)
 # Copies app.py
 # Starts your API using:
-
-
-    FROM python:3.11-slim
-
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -57,7 +50,7 @@ RUN useradd -m -u 1000 appuser && \
 USER appuser
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD python3 -c "import requests; requests.get('http://localhost:5000/health')" || exit 1
+  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')" || exit 1
 
 ENV PYTHONUNBUFFERED=1
 
