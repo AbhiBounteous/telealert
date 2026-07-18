@@ -28,3 +28,17 @@ output "kubeconfig" {
   value       = kind_cluster.telealert.kubeconfig
   sensitive   = true
 }
+output "kube_system_uid" {
+  description = "UID of kube-system namespace"
+  value       = data.kubernetes_namespace.kube_system.metadata[0].uid
+}
+
+output "default_namespace_labels" {
+  description = "Labels on default namespace"
+  value       = data.kubernetes_namespace.default.metadata[0].labels
+}
+
+output "total_nodes" {
+  description = "Total nodes in cluster"
+  value       = length(data.kubernetes_nodes.all.nodes)
+}

@@ -53,4 +53,18 @@ locals {
   }
 
   current = local.workspace_config[terraform.workspace]
+
 }
+data "kubernetes_namespace" "kube_system" {
+  metadata {
+    name = "kube-system"
+  }
+}
+
+data "kubernetes_namespace" "default" {
+  metadata {
+    name = "default"
+  }
+}
+
+data "kubernetes_nodes" "all" {}
