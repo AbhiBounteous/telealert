@@ -1,6 +1,6 @@
 resource "kind_cluster" "telealert" {
-  name           = var.cluster_name
-  node_image     = var.cluster_node_image
+  name           = "telealert-${terraform.workspace}"
+  node_image     = local.current.node_image
   wait_for_ready = true
 
   kind_config {
@@ -12,7 +12,7 @@ resource "kind_cluster" "telealert" {
     }
 
     dynamic "node" {
-      for_each = range(var.worker_nodes)
+      for_each = range(local.current.worker_count)
       content {
         role = "worker"
       }
@@ -20,38 +20,16 @@ resource "kind_cluster" "telealert" {
   }
 }
 
-resource "kubernetes_namespace" "argocd" {
+resource "kubernetes_namespace" "namespaces" {
+  for_each   = toset(local.current.namespaces)
   depends_on = [kind_cluster.telealert]
 
   metadata {
-    name = var.argocd_namespace
+    name = each.value
     labels = {
-      managed-by = "terraform"
-      project    = "telealert"
-    }
-  }
-}
-
-resource "kubernetes_namespace" "telealert" {
-  depends_on = [kind_cluster.telealert]
-
-  metadata {
-    name = var.telealert_namespace
-    labels = {
-      managed-by = "terraform"
-      project    = "telealert"
-    }
-  }
-}
-
-resource "kubernetes_namespace" "monitoring" {
-  depends_on = [kind_cluster.telealert]
-
-  metadata {
-    name = "monitoring"
-    labels = {
-      managed-by = "terraform"
-      project    = "telealert"
+      managed-by  = "terraform"
+      project     = "telealert"
+      environment = terraform.workspace
     }
   }
 }

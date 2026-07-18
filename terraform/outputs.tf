@@ -8,14 +8,19 @@ output "cluster_endpoint" {
   value       = kind_cluster.telealert.endpoint
 }
 
-output "argocd_namespace" {
-  description = "ArgoCD namespace"
-  value       = kubernetes_namespace.argocd.metadata[0].name
+output "current_workspace" {
+  description = "Current Terraform workspace"
+  value       = terraform.workspace
 }
 
-output "telealert_namespace" {
-  description = "TeleAlert namespace"
-  value       = kubernetes_namespace.telealert.metadata[0].name
+output "worker_nodes" {
+  description = "Number of worker nodes"
+  value       = local.current.worker_count
+}
+
+output "namespaces" {
+  description = "Created namespaces"
+  value       = local.current.namespaces
 }
 
 output "kubeconfig" {

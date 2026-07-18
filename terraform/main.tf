@@ -27,3 +27,30 @@ provider "helm" {
     config_path = "~/.kube/config"
   }
 }
+
+locals {
+  workspace_config = {
+    dev = {
+      worker_count = 1
+      node_image   = "kindest/node:v1.29.0"
+      namespaces   = ["argocd", "monitoring", "telealert-dev"]
+    }
+    staging = {
+      worker_count = 2
+      node_image   = "kindest/node:v1.29.0"
+      namespaces   = ["argocd", "monitoring", "telealert-staging"]
+    }
+    prod = {
+      worker_count = 3
+      node_image   = "kindest/node:v1.29.0"
+      namespaces   = ["argocd", "monitoring", "telealert-prod"]
+    }
+    default = {
+      worker_count = 1
+      node_image   = "kindest/node:v1.29.0"
+      namespaces   = ["argocd", "monitoring", "telealert"]
+    }
+  }
+
+  current = local.workspace_config[terraform.workspace]
+}
