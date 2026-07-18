@@ -166,3 +166,21 @@ Evidence: Event loop blocked 15234ms in logs
 Fix: Use dedicated cluster with 8GB+ RAM
      Or reduce other workloads first
      Works correctly on EKS/GKE with proper resources
+
+## Docker restart breaks DNS (July 2026)
+Problem: API 500 after Docker Desktop restart
+Root cause: Network policies blocking DNS port 53
+Fix 1: Delete network policies temporarily
+Fix 2: Restart kindnet CNI daemonset
+Fix 3: Restart CoreDNS deployment
+Fix 4: Delete API pods to get fresh DNS
+
+## protobuf version conflict
+Problem: Docker build fails
+Error: opentelemetry-proto requires protobuf<5.0
+Fix: Use protobuf>=3.19,<5.0 in requirements.txt
+
+## Two clusters consuming 993% CPU
+Problem: Docker Desktop overloaded
+Root cause: devops-lab + telealert-tf running together
+Fix: kind delete cluster --name telealert-tf
