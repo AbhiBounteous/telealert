@@ -1,0 +1,62 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: telealert-database
+spec:
+  compositeTypeRef:
+    apiVersion: telealert.bounteous.com/v1alpha1
+    kind: XTeleAlertDatabase
+  mode: Pipeline
+  pipeline:
+    - step: create-resources
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: namespace
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Namespace
+                    metadata:
+                      name: placeholder
+                providerConfigRef:
+                  name: default
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.parameters.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.name
+
+          - name: database-secret
+            base:
+              apiVersion: kubernetes.crossplane.io/v1alpha2
+              kind: Object
+              spec:
+                forProvider:
+                  manifest:
+                    apiVersion: v1
+                    kind: Secret
+                    metadata:
+                      name: db-credentials
+                      namespace: placeholder
+                    stringData:
+                      host: postgres
+                      port: "5432"
+                      database: placeholder
+                      username: admin
+                      password: telealert-2026
+                providerConfigRef:
+                  name: default
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.parameters.namespace
+                toFieldPath: spec.forProvider.manifest.metadata.namespace
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.parameters.dbName
+                toFieldPath: spec.forProvider.manifest.stringData.database

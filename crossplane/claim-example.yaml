@@ -1,0 +1,12 @@
+# Developer applies this to get a database
+# No infra ticket needed!
+apiVersion: telealert.bounteous.com/v1alpha1
+kind: TeleAlertDatabase
+metadata:
+  name: my-app-database
+  namespace: default
+spec:
+  parameters:
+    namespace: my-team-dev
+    dbName: myapp
+    environment: dev
