@@ -184,3 +184,15 @@ Fix: Use protobuf>=3.19,<5.0 in requirements.txt
 Problem: Docker Desktop overloaded
 Root cause: devops-lab + telealert-tf running together
 Fix: kind delete cluster --name telealert-tf
+
+## k6 port-forward instability under load
+Problem: Connection refused during load test
+Root cause: kubectl port-forward is a
+            debugging tool, not load testing tool
+            Breaks under concurrent connections
+Evidence: Smoke test (5 VUs) passed
+          Load test (5+ VUs) port-forward died
+Fix: Use NodePort or Ingress for load testing
+     In production EKS use LoadBalancer
+Lesson: Always test with production-like
+        network setup
