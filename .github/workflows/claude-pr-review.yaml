@@ -26,10 +26,9 @@ jobs:
       - name: Get diff content
         run: |
           git diff origin/${{ github.base_ref }}...HEAD \
-            -- '*.yaml' '*.yml' '*.tf' \
-               '*.py' 'Dockerfile*' \
+            -- '*.yaml' '*.yml' '*.tf' '*.py' 'Dockerfile*' \
             > /tmp/pr_diff.txt
-          echo "Diff size: $(wc -l < /tmp/pr_diff.txt) lines"
+          echo "Lines: $(wc -l < /tmp/pr_diff.txt)"
 
       - name: Install anthropic
         run: pip install anthropic
@@ -39,7 +38,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          python3 << 'PYTHON'
+          python3 - << 'PYEOF'
           import anthropic, os
 
           client = anthropic.Anthropic()
@@ -50,10 +49,44 @@ jobs:
           with open('/tmp/changed_files.txt') as f:
               changed_files = f.read()
 
-          prompt = f"""You are a Senior DevOps Engineer reviewing a PR for TeleAlert.
+          pr_title = os.environ.get('PR_TITLE', 'No title')
 
-PR Title: {os.environ['PR_TITLE']}
-Changed Files:
-{changed_files}
+          prompt = (
+              "You are a Senior DevOps Engineer reviewing a PR for TeleAlert.\n\n"
+              f"PR Title: {pr_title}\n"
+              f"Changed Files:\n{changed_files}\n\n"
+              f"Git Diff:\n{diff}\n\n"
+              "Review for:\n"
+              "CRITICAL: hardcoded secrets, :latest tags, root containers\n"
+              "HIGH: missing resource limits, missing readinessProbe\n"
+              "MEDIUM: missing labels, missing ServiceMonitor\n\n"
+              "Format response as:\n"
+              "## Claude DevOps PR Review\n"
+              "### CRITICAL\n"
+              "### HIGH\n"
+              "### MEDIUM\n"
+              "### Good Patterns\n"
+              "### Verdict: APPROVE or REQUEST_CHANGES\n"
+          )
 
-Git Diff:
+          response = client.messages.create(
+              model="claude-sonnet-4-6",
+              max_tokens=2000,
+              messages=[{"role": "user", "content": prompt}]
+          )
+
+          review = response.content[0].text
+          print(review)
+
+          with open('/tmp/claude_review.txt', 'w') as f:
+              f.write(review)
+          PYEOF
+
+      - name: Post review as PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body "$(cat /tmp/claude_review.txt)"
+EOF
