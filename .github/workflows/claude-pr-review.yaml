@@ -19,6 +19,7 @@ jobs:
       - name: Claude DevOps Review
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
         run: |
           git diff origin/${{ github.base_ref }}...HEAD > /tmp/diff.txt
           python3 -c "
